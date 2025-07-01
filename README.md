@@ -10,15 +10,15 @@ The PTCHAZ model is developed using MATLAB and Python 3. The model can be run as
    
    preprocess_AR_v1.m: prepare data used in training the intensity model
    
-   CHAZ_PTC_track4pre_v11.m: prepare synthetic track
+   CHAZ_PTC_track4pre_v11.m: prepare synthetic track for next preprocessing step
    
-   CHAZ_PTC_preprocess_v11_1.m: prepare environmental factors
+   CHAZ_PTC_preprocess_v11_1.m: prepare environmental factors for running the model
    
 ## 2. Model training
  
    logistic_regression.ipynb: train ET timing model
    
-   CHAZ_stepwise_v11.m: train intensity model
+   CHAZ_stepwise_v11.m: train intensity model, the 3- and 8-predictor configurations can be selected here.
    
    CHAZ_obs_dissp_v1.m: train dissipation model
    
