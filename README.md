@@ -4,7 +4,7 @@ The Post-Tropical Cyclone HAZard model (PTCHAZ) is a statistical model for asses
 
 The PTCHAZ model is developed using MATLAB and Python 3. The model can be run as follows:
 
-## 1. Prepare data for training and model prediction
+## 1. Prepare data for model training and prediction
    
    preprocess_logistic_v1.m: prepare data used in training the ET timing model
    
@@ -14,7 +14,7 @@ The PTCHAZ model is developed using MATLAB and Python 3. The model can be run as
    
    CHAZ_PTC_preprocess_v11_1.m: prepare environmental factors for running the model
    
-## 2. Model training
+## 2. Train the model
  
    logistic_regression.ipynb: train ET timing model
    
