@@ -80,32 +80,28 @@ xlim([960 1020])
 ylim([0 80])
 %%
 
-% ==== 1. 提取有效数据 ====
 data_blue = bpresex1(~isnan(bpresex1));
 data_blue = data_blue';
 
-% ==== 2. 拟合整体 GEV 分布 ====
 pd_gev = fitdist(data_blue, 'GeneralizedExtremeValue');
 k_all = pd_gev.k;
 sigma_all = pd_gev.sigma;
 mu_all = pd_gev.mu;
 save('gev_params_obs.mat', 'k_all', 'sigma_all', 'mu_all');
 
-% ==== 3. 按纬度分段拟合局地 GEV ====
 lat_list = 33:6:57;
 dl = 6;
 n_lat = length(lat_list);
 p_vals = 900:1:1020;
 
-% 初始化保存局地 GEV 参数
-gev_params = nan(n_lat, 4);  % 第1列为纬度中心，2~4为k,sigma,mu
+gev_params = nan(n_lat, 4);  
 
 figure; hold on;
 cdf_all = cdf(pd_gev, p_vals);
 plot(p_vals, cdf_all*100, 'k', 'LineWidth', 3, 'DisplayName', 'NA');
 pdata_sorted = sort(data_blue);
 n = length(pdata_sorted);
-F_emp = (1:n) ./ (n + 1);  % 或者用 Gringorten: ((1:n)-0.44)./(n+0.12)
+F_emp = (1:n) ./ (n + 1);  
 plot(pdata_sorted, F_emp*100, ':', 'LineWidth', 3, 'color','k', 'HandleVisibility', 'off');
 
 colors = lines(n_lat);
@@ -132,13 +128,12 @@ for i = 1:n_lat
         pd_local = fitdist(pdata', 'gev');
         gev_params(i,:) = [lat0, pd_local.k, pd_local.sigma, pd_local.mu];
 
-        % 绘图
         cdf_local = cdf(pd_local, p_vals);
         plot(p_vals, cdf_local*100, 'LineWidth', 3, 'color',col_now,'DisplayName', legend_label);
 
         pdata_sorted = sort(pdata);
         n = length(pdata_sorted);
-        F_emp = (1:n) ./ (n + 1);  % 或者用 Gringorten: ((1:n)-0.44)./(n+0.12)
+        F_emp = (1:n) ./ (n + 1);  
         plot(pdata_sorted, F_emp*100, ':', 'LineWidth', 3, 'color',col_now, 'HandleVisibility', 'off');
     end
 end
@@ -152,9 +147,8 @@ xlim([950 1020]);
 exportgraphics(gca, ['Obs_diss_cdf1.jpg'], 'Resolution', 1100);
 close
 
-% ==== 4. 纬度插值 ====
-lat_interp = 0:1:90;  % 目标纬度
-interp_params = nan(length(lat_interp), 4);  % 纬度，k, sigma, mu
+lat_interp = 0:1:90;  
+interp_params = nan(length(lat_interp), 4); 
 
 valid_rows = ~any(isnan(gev_params(:,2:4)), 2);
 lat_valid = gev_params(valid_rows,1);
@@ -177,10 +171,6 @@ for j = 1:length(lat_interp)
     end
 end
 
-% ==== 5. 保存结果 ====
-% save('gev_params_interp_by_lat.mat', 'interp_params');
+save('gev_params_interp_by_lat.mat', 'interp_params');
 
-% 可选输出确认
-% disp('插值后的 GEV 参数格式：');
-% disp('   Lat     k       sigma     mu');
-% disp(interp_params(1:5,:));  % 前几行预览
+
