@@ -348,14 +348,11 @@ dgradz700=dgradz(:,:,26);
 dgradz850=dgradz(:,:,31);
 %%
 %lev=[11,17,22,26,31];
-% 初始化与设置
-rng(42);  % 保证随机可复现
+rng(42); 
 
-% 只要某一列在这几个变量中有一个非 NaN 就算有效
-valid_cyclone_mask = any(~isnan(dp12) & ~isnan(dpi) & ~isnan(presex12) & ~isnan(sp), 1); % 逻辑是每列有“至少一个”时为 true
+valid_cyclone_mask = any(~isnan(dp12) & ~isnan(dpi) & ~isnan(presex12) & ~isnan(sp), 1); 
 valid_cyclones = find(valid_cyclone_mask);
 
-% 划分训练和测试集
 nValidCyclones = numel(valid_cyclones);
 nTrain = round(0.8 * nValidCyclones);
 shuffled = valid_cyclones(randperm(nValidCyclones));
@@ -365,7 +362,6 @@ test_idx = shuffled(nTrain+1:end);
 nTrainEachIter = round(0.7 * nTrain);
 nIter = 100;
 
-% 所有变量名和变量矩阵
 varNames = {'rh100','rh250','rh500','rh700','rh850',...
     'drh100','drh250','drh500','drh700','drh850',...
     'uv100','uv250','uv500','uv700','uv850',...
@@ -437,7 +433,6 @@ for i = 1:nIter
     fprintf('Running iteration %d/%d...\n', i, nIter);
     sub_idx = randsample(train_idx, nTrainEachIter);
     
-    % 将目标变量和输入变量 reshape 成列向量并去除 NaN
     dp12_vec = reshape(dp12(:,sub_idx), [], 1);
     dpi_vec = reshape(dpi(:,sub_idx), [], 1);
     presex12_vec = reshape(presex12(:,sub_idx), [], 1);
@@ -477,12 +472,10 @@ for i = 1:nIter
 end
 
 %%
-% === 使用 stepwise 排序后的变量顺序，不做筛选 ===
 T = table(varNames(:), select_counts(:), 'VariableNames', {'Variable', 'SelectionCount'});
 T = sortrows(T, 'SelectionCount', 'descend');
-selected_vars = T.Variable;  % 不筛选，保留全部排序结果
+selected_vars = T.Variable;  
 
-% === 构造训练集 Y （固定）===
 dp12_train = reshape(dp12(:,train_idx), [], 1);
 dpi_train = reshape(dpi(:,train_idx), [], 1);
 presex12_train = reshape(presex12(:,train_idx), [], 1);
@@ -490,7 +483,6 @@ sp_train = reshape(sp(:,train_idx), [], 1);
 valid_idx = find(~isnan(dp12_train) & ~isnan(dpi_train) & ~isnan(presex12_train) & ~isnan(sp_train));
 Y_train = dp12_train(valid_idx);
 
-% === 构造测试集 Y （固定）===
 dp12_test = reshape(dp12(:,test_idx), [], 1);
 dpi_test = reshape(dpi(:,test_idx), [], 1);
 presex12_test = reshape(presex12(:,test_idx), [], 1);
@@ -498,17 +490,15 @@ sp_test = reshape(sp(:,test_idx), [], 1);
 valid_idx_test = find(~isnan(dp12_test) & ~isnan(dpi_test) & ~isnan(presex12_test) & ~isnan(sp_test));
 Y_test = dp12_test(valid_idx_test);
 
-% === 初始化 ===
 max_var = min(20, length(selected_vars));
-results_lin = [];        % 原本已有
-results_resid = [];      % 添加这一行！
+results_lin = [];        
+results_resid = [];      
 results_weighted= [];
 cv = cvpartition(length(Y_train), 'KFold', 10);
 rmse_cv = nan(max_var,1);
 for n_var = 1:max_var
     vars_now = selected_vars(1:n_var);
 
-    % === 构造训练数据 ===
     X_train = zeros(numel(valid_idx), n_var);
     for i = 1:n_var
         idx = find(strcmp(varNames, vars_now{i}));
@@ -518,7 +508,6 @@ for n_var = 1:max_var
     Xm = mean(X_train); Xs = std(X_train); Xs(Xs==0) = 1;
     X_train_std = (X_train - Xm) ./ Xs;
 
-    % === 构造测试数据 ===
     X_test = zeros(numel(valid_idx_test), n_var);
     for i = 1:n_var
         idx = find(strcmp(varNames, vars_now{i}));
@@ -527,15 +516,12 @@ for n_var = 1:max_var
     end
     X_test_std = (X_test - Xm) ./ Xs;
 
-    % === 权重定义（尾部更高） ===
     Y_train_centered = Y_train - mean(Y_train);
-    w_train = 1 + abs(Y_train_centered);  % 可改为 ^2 强调尾部
+    w_train = 1 + abs(Y_train_centered); 
 
-    % === 线性回归模型 ===
     mdl_lin = fitlm(X_train_std, Y_train, 'VarNames', [vars_now', {'dp12'}]);
     Y_pred_lin = predict(mdl_lin, X_test_std);
 
-    % === 加权线性回归模型 ===
     mdl_weighted = fitlm(X_train_std, Y_train, 'Weights', w_train, 'VarNames', [vars_now', {'dp12'}]);
     Y_pred_weighted = predict(mdl_weighted, X_test_std);
     Y_pred_weighted_train = predict(mdl_weighted, X_train_std);
@@ -555,7 +541,6 @@ for n_var = 1:max_var
 
     rmse_cv(n_var) = mean(rmse_fold);
 
-    % === 残差建模：整体拟合 t 分布 ===
     res_train = Y_train - predict(mdl_weighted, X_train_std);
     pd_t = fitdist(res_train, 'tLocationScale');
     res_sample = random(pd_t, length(Y_pred_weighted), 1);
@@ -566,7 +551,6 @@ for n_var = 1:max_var
 
     Y_pred_res = Y_pred_weighted + res_sample*.1;
 
-    % === 性能评估指标 ===
     calc_stats = @(y, yhat) struct(...
         'n_var', n_var, ...
         'R2', 1 - sum((y - yhat).^2) / sum((y - mean(y)).^2), ...
@@ -582,7 +566,6 @@ for n_var = 1:max_var
     results_resid = [results_resid; stats_resid];
     results_weighted = [results_weighted; stats_weighted];
 
-    % === K-S 检验统计 ===
     [~, p_lin, ks_lin] = kstest2(Y_test, Y_pred_lin);
     [~, p_res, ks_res] = kstest2(Y_test, Y_pred_res);
     [~, p_wgt, ks_wgt] = kstest2(Y_test, Y_pred_weighted);
@@ -596,7 +579,6 @@ for n_var = 1:max_var
     ks_results(n_var).p_wgt = p_wgt;
 
     if n_var==8
-        % 可视化残差 PDF 与 t 分布拟合
         x_range = linspace(min(res_train), max(res_train), 200);
         pdf_empirical = ksdensity(res_train, x_range);
         pdf_t = pdf(pd_t, x_range);
@@ -610,7 +592,6 @@ for n_var = 1:max_var
         title('Residual PDF: Empirical vs t Distribution');
         grid on;
 
-        % 可视化观测与三种预测的 PDF
         subplot(2,1,2);
         [f_obs, x_obs] = ksdensity(Y_test);
         [f_lin, x_lin] = ksdensity(Y_pred_lin);
@@ -632,80 +613,19 @@ for n_var = 1:max_var
     end
 end
 
-% === 转表格 ===
 T_lin = struct2table(results_lin);
 T_resid = struct2table(results_resid);
 T_weighted = struct2table(results_weighted);
 T_ks = struct2table(ks_results);
 
 
-% === 可视化对比 ===
-figure;
-subplot(4,1,1);
-plot(T_lin.n_var, T_lin.R2, '-o', 'LineWidth', 2); hold on;
-plot(T_resid.n_var, T_resid.R2, '-s', 'LineWidth', 2);
-plot(T_weighted.n_var, T_weighted.R2, '-^', 'LineWidth', 2);
-ylabel('R^2'); title('R^2 Comparison'); legend('Linear','t Residual','Weighted'); grid on;
 
-subplot(4,1,2);
-plot(T_lin.n_var, T_lin.RMSE, '-o', 'LineWidth', 2); hold on;
-plot(T_resid.n_var, T_resid.RMSE, '-s', 'LineWidth', 2);
-plot(T_weighted.n_var, T_weighted.RMSE, '-^', 'LineWidth', 2);
-ylabel('RMSE'); legend('Linear','t Residual','Weighted'); grid on;
-
-subplot(4,1,3);
-plot(T_lin.n_var, T_lin.MAE, '-o', 'LineWidth', 2); hold on;
-plot(T_resid.n_var, T_resid.MAE, '-s', 'LineWidth', 2);
-plot(T_weighted.n_var, T_weighted.MAE, '-^', 'LineWidth', 2);
-ylabel('MAE'); legend('Linear','t Residual','Weighted'); grid on;
-
-subplot(4,1,4);
-plot(T_lin.n_var, T_lin.SignAcc, '-o', 'LineWidth', 2); hold on;
-plot(T_resid.n_var, T_resid.SignAcc, '-s', 'LineWidth', 2);
-plot(T_weighted.n_var, T_weighted.SignAcc, '-^', 'LineWidth', 2);
-ylabel('Sign Accuracy'); xlabel('Number of Predictors');
-legend('Linear','t Residual','Weighted'); grid on;
-
-sgtitle('Performance Comparison: Linear vs Residual vs Weighted Modeling');
-
-figure
-hold on
-% plot(1:max_var, rmse_train_all(1:max_var), '-ok', 'LineWidth', 4,'markersize',8, 'markerfacecolor','k');  % 新增部分
-plot(T_weighted.n_var, T_weighted.RMSE, '-ok', 'LineWidth', 4,'markersize',8, 'markerfacecolor','k');
-ylabel('RMSE (hPa)'); xlabel('Number of Predictors');
-% legend('Training', 'Testing');
-grid on;
-xlim([1 8])
-xticks(1:10)
-set(gca, 'fontsize', 20);
-exportgraphics(gca, ['rmse_predictor.jpg'], 'Resolution', 1100);
-
-figure
-plot(1:max_var, rmse_cv, '-ok', 'LineWidth', 4);
-ylabel('10-Fold CV RMSE (hPa)');
-xlabel('Number of Predictors');
-xlim([1 max_var])
-xticks(1:max_var)
-grid on;
-set(gca, 'fontsize', 20);
-title('Cross-Validation RMSE vs Number of Predictors');
-
-% === KS 距离随 predictor 数变化 ===
-figure;
-plot(T_ks.n_var, T_ks.KS_lin, '-o', 'LineWidth', 2); hold on;
-plot(T_ks.n_var, T_ks.KS_res, '-s', 'LineWidth', 2);
-plot(T_ks.n_var, T_ks.KS_wgt, '-^', 'LineWidth', 2);
-xlabel('Number of Predictors'); ylabel('K-S Distance');
-legend('Linear', 't Residual', 'Weighted');
-title('K-S Distance vs Number of Predictors');
-grid on;
 
 
 %%
 best_n = 8;
 vars_best = selected_vars(1:best_n);  
 vars_best([4;7])=[];
-% 构造训练 X（重新构造，以确保干净）
 X_train_best = zeros(numel(valid_idx), best_n-2);
 for i = 1:best_n-2
     idx = find(strcmp(varNames, vars_best{i}));
@@ -713,23 +633,19 @@ for i = 1:best_n-2
     X_train_best(:,i) = Xi(valid_idx);
 end
 
-% 标准化
 Xm_best = mean(X_train_best);
 Xs_best = std(X_train_best);
 Xs_best(Xs_best == 0) = 1;
 X_train_best_std = (X_train_best - Xm_best) ./ Xs_best;
 
-% 加权训练
 Y_train_centered = Y_train - mean(Y_train);
 w_train_best = 1 + abs(Y_train_centered);
 mdl_weighted_best = fitlm(X_train_best_std, Y_train, 'Weights', w_train_best, 'VarNames', [vars_best', {'dp12'}]);
 
-% 残差拟合 t 分布
 res_train_best = Y_train - predict(mdl_weighted_best, X_train_best_std);
 pd_t_best = fitdist(res_train_best, 'tLocationScale');
 res_coef = 0.1;
 
-% 保存模型
 save('AR_trainingset6sel_v11.mat', ...
     'mdl_weighted_best', 'Xm_best', 'Xs_best', 'vars_best', ...
     'pd_t_best', 'res_coef', 'train_idx','test_idx');
