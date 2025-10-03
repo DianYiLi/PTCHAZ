@@ -29,3 +29,8 @@ The PTCHAZ model is developed using MATLAB and Python 3. The model can be run as
 ## 4. Predict PTC intensity and dissipation.
  
    CHAZ_PTC_intensity_v13test.m
+
+## Note
+
+   Parameters for ET timing model can be found in CHAZ_ET_v1.m; for PTC intensity model, see AR_trainingset_v11.mat; for PTC dissipation model, see gev_params_interp_by_lat.mat.
+   
