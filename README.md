@@ -32,5 +32,5 @@ The PTCHAZ model is developed using MATLAB and Python 3. The model can be run as
 
 ## Note
 
-   Parameters/coefficients for PTC identification can be found in CHAZ_ET_v1.m; for PTC intensity model, see AR_trainingset_v11.mat; for PTC lysis model, see gev_params_interp_by_lat.mat.
+   Parameters/coefficients for PTC identification can be found in CHAZ_ET_v1.m; for PTC intensity model, see AR_trainingset_v11.mat (3-predictor model) and AR_trainingset8_v11.mat (8-predictor model); for PTC lysis model, see gev_params_interp_by_lat.mat.
    
