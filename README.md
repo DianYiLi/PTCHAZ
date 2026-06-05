@@ -33,4 +33,7 @@ The PTCHAZ model is developed using MATLAB and Python 3. The model can be run as
 ## Note
 
    Parameters/coefficients for PTC identification can be found in CHAZ_ET_v1.m; for PTC intensity model, see AR_trainingset_v11.mat (3-predictor model) and AR_trainingset8_v11.mat (8-predictor model); for PTC lysis model, see gev_params_interp_by_lat.mat.
-   
+
+## Cite
+
+   Li, D. Y., Reed, K. A., Camargo, S. J., Lee, C. Y., Sobel, A. H., Zarzycki, C. M., & Bieli, M. (2026). A statistical model for post‐tropical cyclone hazard assessment. Journal of Geophysical Research: Atmospheres, 131(6), e2025JD044936. https://doi.org/10.1029/2025JD044936.
